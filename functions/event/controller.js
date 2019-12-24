@@ -1,5 +1,6 @@
 Event = require('../../models/event')
 Hall = require('../../models/hall')
+Reservation = require('../../models/reservation')
 
 exports.addEvent = async (req, res) => {
 
@@ -21,7 +22,37 @@ exports.addEvent = async (req, res) => {
     
     return res.send({message:'event registered successfully'})
 
-} 
+}
+
+exports.getEmptySeats = async (req,res) => {
+    const reses = await Reservation.findAll({
+        where:{
+            eventId:req.params.eventId
+        }
+    });
+    var seats = [];
+    reses.forEach(element => {
+        seats = seats.concat(element.seats);
+    });
+    var complete_seats = [];
+    if(reses.length==0) return res.send([])
+    const hall = await Hall.findAll({
+        where:{
+            hallId:reses[0].hallId
+        }
+    });
+    const N = hall.numOfRows * hall.numOfColumns;
+
+    for (var i = 1; i <= N; i++) {
+        complete_seats.push(i);
+    }
+
+    complete_seats = complete_seats.filter( function( el ) {
+        return !seats.includes( el );
+      } );
+    return res.send(complete_seats);
+}
+
 
 exports.deleteEvent = async (req,res) => {
     const event = await Event.findAll({
