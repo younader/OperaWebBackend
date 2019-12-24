@@ -1,4 +1,7 @@
-User = require('../../models/user')
+const User = require('../../models/user')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken');
+const config = require('config');
 
 exports.addUser = async (req, res) => {
 
@@ -15,7 +18,10 @@ exports.addUser = async (req, res) => {
     if(userName.length!=0){return res.send({message:'username already registered'})};
     if(userEmail.length!=0){return res.send({message:'email already registered'})};
 
+    const salt = await bcrypt.genSalt(10);
     const user = new User(req.body);
+    user.password = await bcrypt.hash(user.password,salt);
+
     const result = await user.save();
     
     return res.send({message:'user registered successfully'})
@@ -68,4 +74,14 @@ exports.changeUser = async (req,res)=>{
     user[0].role = req.body.role;
     await user[0].save();
     return res.send({message:'role changed successfully'})
+}
+
+exports.signIn = async(req,res)=>{
+    req.body.email=req.body.email.toLowerCase()
+    let user = await User.findAll({email: req.body.email});
+    if (user.length == 0) return res.status(400).send( {errors:["This email is not registered"]});
+    const validPassword= await bcrypt.compare(req.body.password,user.password);
+    if(!validPassword) return res.status(403).send({errors:["Invalid password"]});
+    const token = jwt.sign({id: user.id,role: user.role}, config.get('jwtPrivateKey'));
+    res.header('x-auth-token',token).status(200).send(customer);
 }
