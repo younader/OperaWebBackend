@@ -83,5 +83,5 @@ exports.signIn = async(req,res)=>{
     const validPassword= await bcrypt.compare(req.body.password,user.password);
     if(!validPassword) return res.status(403).send({errors:["Invalid password"]});
     const token = jwt.sign({id: user.id,role: user.role}, config.get('jwtPrivateKey'));
-    res.header('x-auth-token',token).status(200).send(customer);
+    res.header('x-auth-token',token).status(200).send(user);
 }
